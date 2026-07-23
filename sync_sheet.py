@@ -12,6 +12,29 @@ ROOT = Path(__file__).resolve().parent
 SITE = ROOT / "site"
 CONFIG = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; MAKISheetBoard/1.0)"}
+COLOR_NAMES = {
+    "青": "#AFCBFF",
+    "ブルー": "#AFCBFF",
+    "blue": "#AFCBFF",
+    "ピンク": "#FFD6E7",
+    "pink": "#FFD6E7",
+    "緑": "#D7F5D0",
+    "グリーン": "#D7F5D0",
+    "green": "#D7F5D0",
+    "黄": "#FFF0A8",
+    "黄色": "#FFF0A8",
+    "イエロー": "#FFF0A8",
+    "yellow": "#FFF0A8",
+    "紫": "#DCCBFF",
+    "パープル": "#DCCBFF",
+    "purple": "#DCCBFF",
+    "オレンジ": "#FFD0A6",
+    "orange": "#FFD0A6",
+    "グレー": "#D9DEE8",
+    "灰": "#D9DEE8",
+    "gray": "#D9DEE8",
+    "grey": "#D9DEE8",
+}
 
 
 def set_action_output(name: str, value: str):
@@ -39,6 +62,12 @@ def normalize_color(value: str) -> str:
     value = value.strip()
     if not value:
         return "#AFCBFF"
+    mapped = COLOR_NAMES.get(value)
+    if mapped:
+        return mapped
+    mapped = COLOR_NAMES.get(value.lower())
+    if mapped:
+        return mapped
     if not value.startswith("#"):
         value = "#" + value
     if re.fullmatch(r"#[0-9a-fA-F]{6}", value):

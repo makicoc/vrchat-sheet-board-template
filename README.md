@@ -5,7 +5,7 @@ Google Sheetsの公開CSVを読み込み、VRChat向けの `board.json` とし�
 ## 使い方
 
 1. このリポジトリを自分のGitHubアカウントへ複製します。
-2. `MAKISheetBoard_SheetTemplate.csv` をGoogle Sheetsへインポートします。
+2. 商品に同梱されている `MAKISheetBoard_SheetTemplate.xlsx` をGoogle Sheetsへインポートします。
 3. Google Sheets上で、お知らせ内容を書き換えます。
 4. Google Sheetsを「ウェブに公開」し、CSV URLをコピーします。
 5. `config.json` の `sheet_csv_url` にCSV URLを貼ります。
@@ -20,4 +20,6 @@ Google Sheetsの公開CSVを読み込み、VRChat向けの `board.json` とし�
 - `title`: お知らせタイトル
 - `body`: 本文
 - `date`: 日付や補足表示
-- `color`: `#AFCBFF` のようなアクセントカラー
+- `color`: 色名。`青`, `ピンク`, `緑`, `黄`, `紫`, `オレンジ`, `グレー` が使えます。
+
+上級者向けに、`#AFCBFF` のような `#RRGGBB` 形式も使えます。
