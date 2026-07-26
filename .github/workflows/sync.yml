@@ -11,6 +11,12 @@ on:
       - sync_sheet.py
       - .github/workflows/sync.yml
 
+# GitHub-hosted runners are moving JavaScript actions from Node.js 20 to 24.
+# Some official Pages actions still declare Node.js 20 internally, so opt in
+# explicitly to the supported Node.js 24 compatibility mode and avoid warnings.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: read
   pages: write

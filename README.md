@@ -13,7 +13,7 @@ Google Sheetsの公開CSVを読み込み、VRChat向けの `board.json` とし�
 7. Actionsの「お知らせを同期して公開」を実行します。
 8. 表示された `https://ユーザー名.github.io/リポジトリ名` をUnityの「公開掲示板URL」に貼ります。
 
-`max_items` は0なら制限なしです。件数や本文が多いほど、VRChat内での読み込み・表示が重くなります。
+この商品は最大8件まで表示します。`max_items` は8のまま変更しないでください。新しいお知らせを追加する時は、不要な古いお知らせをGoogle Sheetsから削除してください。
 
 ## CSVの列
 
