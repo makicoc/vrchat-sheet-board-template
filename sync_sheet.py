@@ -5,6 +5,8 @@ import io
 import json
 import os
 import re
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -12,6 +14,9 @@ ROOT = Path(__file__).resolve().parent
 SITE = ROOT / "site"
 CONFIG = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; MAKISheetBoard/1.0)"}
+FETCH_ATTEMPTS = 3
+FETCH_TIMEOUT_SECONDS = 30
+RETRY_DELAYS_SECONDS = (5, 15)
 COLOR_NAMES = {
     "青": "#AFCBFF",
     "ブルー": "#AFCBFF",
@@ -44,11 +49,43 @@ def set_action_output(name: str, value: str):
             output.write(f"{name}={value}\n")
 
 
+class FetchError(RuntimeError):
+    """A temporary or external error while downloading the published CSV."""
+
+    def __init__(self, message: str, *, transient: bool = True):
+        super().__init__(message)
+        self.transient = transient
+
+
 def fetch_text(url: str) -> str:
-    request = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(request, timeout=90) as response:
-        data = response.read()
-    return data.decode("utf-8-sig", errors="replace")
+    last_error = None
+    for attempt in range(1, FETCH_ATTEMPTS + 1):
+        try:
+            request = urllib.request.Request(url, headers=HEADERS)
+            with urllib.request.urlopen(request, timeout=FETCH_TIMEOUT_SECONDS) as response:
+                data = response.read()
+            return data.decode("utf-8-sig", errors="replace")
+        except urllib.error.HTTPError as exc:
+            # Retry only errors that are commonly temporary. A 403/404 should
+            # remain visible as a configuration or sharing error.
+            if exc.code not in {408, 425, 429} and not 500 <= exc.code <= 599:
+                raise FetchError(
+                    f"Google Sheetsの取得に失敗しました（HTTP {exc.code}）。",
+                    transient=False,
+                ) from exc
+            last_error = exc
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            last_error = exc
+
+        if attempt < FETCH_ATTEMPTS:
+            delay = RETRY_DELAYS_SECONDS[min(attempt - 1, len(RETRY_DELAYS_SECONDS) - 1)]
+            print(f"Google Sheetsの取得に失敗しました。{delay}秒後に再試行します（{attempt}/{FETCH_ATTEMPTS}）")
+            time.sleep(delay)
+
+    raise FetchError(
+        f"Google Sheetsの取得が{FETCH_ATTEMPTS}回連続で失敗しました。"
+        f"一時的な通信エラーの可能性があります: {last_error}"
+    ) from last_error
 
 
 def read_field(row: dict, *names: str) -> str:
@@ -117,8 +154,20 @@ def main():
     if not sheet_csv_url.startswith("https://"):
         raise RuntimeError("config.json の sheet_csv_url には https:// で始まる公開CSV URLを設定してください。")
 
+    try:
+        csv_text = fetch_text(sheet_csv_url)
+    except FetchError as exc:
+        # Keep the last successful Pages deployment by skipping the deploy.
+        # Pages retains the previous deployment even when this checkout has no
+        # generated site files. Configuration errors still fail visibly.
+        if exc.transient:
+            set_action_output("skipped", "true")
+            print(f"一時的にGoogle Sheetsを取得できないため、公開をスキップして前回のPagesデータを維持します: {exc}")
+            return
+        raise
+
+    notices = normalize_rows(csv_text)
     set_action_output("skipped", "false")
-    notices = normalize_rows(fetch_text(sheet_csv_url))
     SITE.mkdir(parents=True, exist_ok=True)
     (SITE / "board.json").write_text(json.dumps({"notices": notices}, ensure_ascii=False, indent=2), encoding="utf-8")
     (SITE / ".nojekyll").write_text("", encoding="utf-8")
